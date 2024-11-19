@@ -1,2 +1,2 @@
-# BudgetFlow
+# Tetris-Clone
 thesis project

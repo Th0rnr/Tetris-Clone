@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { RegisterController } from "@/app/controllers/registerController";
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json();
+    const { email, username, password } = await request.json();
 
-    if (!email || !password) {
+    if (!email || !username || !password) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
 
     const result = await RegisterController.register({
       email,
-
+      username,
       password,
     });
 

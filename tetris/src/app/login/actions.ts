@@ -1,70 +1,85 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { RegisterController } from "@/app/controllers/registerController";
+import { LoginController } from "@/app/controllers/loginController";
 
-import { createClient } from "@/utils/supabase/server";
-
-export async function login(formData: FormData) {
-  const supabase = await createClient();
-
-  // type-casting here for convenience
-  // in practice, you should validate your inputs
-  const data = {
-    email: formData.get("email") as string,
-    password: formData.get("password") as string,
-  };
-
-  const { error } = await supabase.auth.signInWithPassword(data);
-
-  if (error) {
-    redirect("/error");
-  }
-
-  revalidatePath("/", "layout");
-  redirect("/game");
-}
-
-export async function signup(formData: FormData) {
-  const supabase = await createClient();
-
-  const data = {
-    email: formData.get("email") as string,
-    password: formData.get("password") as string,
-  };
-
-  console.log("Attempting signup with:", data.email);
-
-  const { data: authData, error: signUpError } = await supabase.auth.signUp(
-    data
-  );
-
-  console.log("Signup response:", { authData, signUpError });
-
-  if (signUpError || !authData.user) {
-    console.error("Signup error:", signUpError);
-    redirect("/error");
-  }
-
+export async function register(formData: FormData) {
   try {
-    console.log("Creating profile for user:", authData.user.id);
-    const { error: profileError } = await supabase.from("users").insert({
-      id: authData.user.id,
-      email: data.email,
-      username: data.email.split("@")[0],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    });
+    console.log("Starting registration process...");
 
-    if (profileError) {
-      console.error("Profile creation error:", profileError);
+    const email = formData.get("email") as string;
+    const username = formData.get("username") as string;
+    const password = formData.get("password") as string;
+
+    if (!email || !username || !password) {
+      return {
+        success: false,
+        error: "All fields are required",
+      };
     }
 
-    console.log("Profile created successfully");
-  } catch (error) {
-    console.error("Unexpected error:", error);
-  }
+    const result = await RegisterController.register({
+      email,
+      username,
+      password,
+    });
 
-  revalidatePath("/", "layout");
-  redirect("/");
+    console.log("Registration result:", result);
+
+    return {
+      success: result.success,
+      error: result.message,
+    };
+  } catch (error) {
+    console.error("Registration error:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "An unexpected error occurred",
+    };
+  }
+}
+
+export async function login(formData: FormData) {
+  try {
+    console.log("Starting login process...");
+
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    if (!email || !password) {
+      return {
+        success: false,
+        error: "Email and password are required",
+      };
+    }
+
+    const result = await LoginController.login(email, password);
+    console.log("Login result:", result);
+
+    return {
+      success: !!result, // Convert result to boolean
+      error: result ? null : "Invalid credentials",
+    };
+  } catch (error) {
+    console.error("Login error:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "An unexpected error occurred",
+    };
+  }
+}
+
+export async function logout() {
+  try {
+    await LoginController.logout();
+    return { success: true };
+  } catch (error) {
+    console.error("Logout error:", error);
+    return {
+      success: false,
+      error: "Failed to logout",
+    };
+  }
 }

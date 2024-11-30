@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { login } from "./actions";
+import { register } from "./actions";
 import Link from "next/link";
 import TetrisSpinner from "@/components/loader/TetrisSpinner";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -18,7 +18,7 @@ export default function LoginPage() {
     try {
       setError(null);
       setIsLoading(true);
-      const result = await login(formData);
+      const result = await register(formData);
 
       if (result?.success) {
         router.push("/private/game");
@@ -80,6 +80,22 @@ export default function LoginPage() {
 
             <div>
               <label
+                htmlFor="username"
+                className="block text-sm font-medium text-gray-200 mb-2"
+              >
+                Username
+              </label>
+              <input
+                id="username"
+                name="username"
+                type="text"
+                required
+                className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label
                 htmlFor="password"
                 className="block text-sm font-medium text-gray-200 mb-2"
               >
@@ -92,6 +108,11 @@ export default function LoginPage() {
                 required
                 className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+              <p className="mt-2 text-sm text-gray-400">
+                Password must contain at least 8 characters, one uppercase
+                letter, one lowercase letter, one number, and one special
+                character.
+              </p>
             </div>
 
             <button
@@ -99,17 +120,14 @@ export default function LoginPage() {
               className="w-full bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-colors"
               disabled={isLoading}
             >
-              Log in
+              Sign up
             </button>
           </form>
 
           <p className="mt-4 text-center text-gray-400">
-            Don't have an account?{" "}
-            <Link
-              href="/register"
-              className="text-blue-400 hover:text-blue-300"
-            >
-              Sign up
+            Already have an account?{" "}
+            <Link href="/login" className="text-blue-400 hover:text-blue-300">
+              Log in
             </Link>
           </p>
         </div>

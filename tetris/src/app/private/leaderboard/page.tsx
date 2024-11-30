@@ -1,7 +1,63 @@
-import { highScoreController } from "@/app/controllers/highScoreController";
+"use client";
 
-export default async function Leaderboard() {
-  const highScores = await highScoreController.getTopScores(10);
+import { useEffect, useState } from "react";
+
+interface HighScore {
+  id: number;
+  score: number;
+  user: {
+    username: string;
+  };
+}
+
+export default function Leaderboard() {
+  const [highScores, setHighScores] = useState<HighScore[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchHighScores = async () => {
+      try {
+        const response = await fetch("/api/highscores?limit=10");
+        if (!response.ok) throw new Error("Failed to fetch high scores");
+        const data = await response.json();
+        setHighScores(data);
+      } catch (error) {
+        console.error("Error fetching high scores:", error);
+        setError("Failed to load high scores");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchHighScores();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] bg-gray-900 flex flex-col items-center py-8 px-4">
+        <div className="animate-pulse">
+          <h1 className="text-4xl font-bold mb-8 bg-gray-700 h-12 w-64 rounded"></h1>
+          <div className="w-full max-w-2xl bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-16 bg-gray-700 mb-1"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] bg-gray-900 flex flex-col items-center justify-center py-8 px-4">
+        <div className="text-center text-red-400">
+          <p className="text-xl font-bold mb-2">Error</p>
+          <p>{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-gray-900 flex flex-col items-center py-8 px-4">

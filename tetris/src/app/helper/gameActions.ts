@@ -1,17 +1,22 @@
 "use server";
 
-import { gameSessionController } from "@/app/controllers/gameSessionController";
+import {
+  startSession,
+  endSession,
+} from "@/app/controllers/gameSessionController";
+import type { GameSessionResponse, GameSessionStats } from "@/types/index";
 
-export async function startGameSession(userId: string) {
+export async function startGameSession(
+  userId: string
+): Promise<GameSessionResponse> {
   console.log("Starting game session for user:", userId);
 
   if (!userId) {
-    console.error("No userId provided to startGameSession");
     return { success: false, error: "No userId provided" };
   }
 
   try {
-    const result = await gameSessionController.startSession(userId);
+    const result = await startSession(userId);
     console.log("Game session result:", result);
     return result;
   } catch (error) {
@@ -24,11 +29,26 @@ export async function startGameSession(userId: string) {
   }
 }
 
-export async function endGameSession(sessionId: number, finalScore: number) {
+export async function endGameSession(
+  sessionId: number,
+  stats: GameSessionStats
+): Promise<GameSessionResponse> {
+  console.log("Ending game session:", sessionId, "with stats:", stats);
+
+  if (!sessionId) {
+    return { success: false, error: "No sessionId provided" };
+  }
+
   try {
-    return await gameSessionController.endSession(sessionId, finalScore);
+    const result = await endSession(sessionId, stats);
+    console.log("End session result:", result);
+    return result;
   } catch (error) {
-    console.error("Error ending game session:", error);
-    throw error;
+    console.error("Full error ending game session:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Failed to end game session",
+    };
   }
 }

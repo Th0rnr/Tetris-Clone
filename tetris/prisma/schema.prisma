@@ -17,6 +17,8 @@ model User {
   updatedAt       DateTime       @updatedAt
   gameSessions    GameSession[]
   highScores      HighScore[]
+   gameStats       GameStats?        // Add relation to GameStats
+  achievements    UserAchievement[] // Add relation to UserAchievement
 
   @@map("users")
 }
@@ -27,6 +29,10 @@ model GameSession {
   sessionStart  DateTime  @default(now())
   sessionEnd    DateTime?
   score         Int
+  linesCleared Int      @default(0)
+  level        Int      @default(1)
+  tetrisCount  Int      @default(0)
+  isPerfectClear Boolean @default(false)
   user          User      @relation(fields: [userId], references: [id])
 
   @@map("game_sessions")
@@ -40,4 +46,35 @@ model HighScore {
   user        User      @relation(fields: [userId], references: [id])
 
   @@map("high_scores")
+}
+
+
+model GameStats {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  totalScore        Int      @default(0)
+  highestScore      Int      @default(0)
+  totalLinesCleared Int      @default(0)
+  maxLinesInOneGame Int      @default(0)
+  gamesPlayed       Int      @default(0)
+  tetrisCount       Int      @default(0)
+  maxLevel          Int      @default(0)
+  perfectClearCount Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id])
+
+  @@map("game_stats")
+}
+
+
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  achievementId String
+  unlockedAt    DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
 }

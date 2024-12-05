@@ -1,7 +1,31 @@
 "use server";
 
 import { prisma } from "@/utils/PrismaClient";
-import { GameStats, Achievement, ACHIEVEMENTS } from "@/types/achievements";
+import type { GameStats, GameSessionStats } from "@/types";
+import type { Achievement, ClientAchievement } from "@/types/achievements";
+import { ACHIEVEMENTS } from "@/types/achievements";
+
+function toClientAchievement(achievement: Achievement): ClientAchievement {
+  const { condition, progress, ...clientAchievement } = achievement;
+  return clientAchievement;
+}
+
+function convertSessionToGameStats(
+  session: GameSessionStats,
+  userId: string
+): GameStats {
+  return {
+    userId,
+    totalScore: session.score,
+    highestScore: session.score,
+    totalLinesCleared: session.linesCleared,
+    maxLinesInOneGame: session.linesCleared,
+    gamesPlayed: 1,
+    tetrisCount: session.tetrisCount,
+    maxLevel: session.level,
+    perfectClearCount: session.isPerfectClear ? 1 : 0,
+  };
+}
 
 export async function getUserStats(userId: string): Promise<GameStats> {
   try {
@@ -32,45 +56,29 @@ export async function getUserStats(userId: string): Promise<GameStats> {
   }
 }
 
-export async function getUserAchievements(userId: string) {
-  try {
-    const userAchievements = await prisma.userAchievement.findMany({
-      where: { userId },
-    });
-
-    return userAchievements.map((ua) => ({
-      ...ACHIEVEMENTS.find((a) => a.id === ua.achievementId)!,
-      unlockedAt: ua.unlockedAt,
-    }));
-  } catch (error) {
-    console.error("Error fetching user achievements:", error);
-    throw error;
-  }
-}
-
-async function updateStats(userId: string, gameStats: Partial<GameStats>) {
+async function updateStats(
+  userId: string,
+  currentGame: GameSessionStats
+): Promise<GameStats> {
   try {
     const currentStats = await getUserStats(userId);
 
     return await prisma.gameStats.update({
       where: { userId },
       data: {
-        totalScore: currentStats.totalScore + (gameStats.totalScore || 0),
-        highestScore: Math.max(
-          currentStats.highestScore,
-          gameStats.highestScore || 0
-        ),
+        totalScore: currentStats.totalScore + currentGame.score,
+        highestScore: Math.max(currentStats.highestScore, currentGame.score),
         totalLinesCleared:
-          currentStats.totalLinesCleared + (gameStats.totalLinesCleared || 0),
+          currentStats.totalLinesCleared + currentGame.linesCleared,
         maxLinesInOneGame: Math.max(
           currentStats.maxLinesInOneGame,
-          gameStats.maxLinesInOneGame || 0
+          currentGame.linesCleared
         ),
-        gamesPlayed: currentStats.gamesPlayed + (gameStats.gamesPlayed ? 1 : 0),
-        tetrisCount: currentStats.tetrisCount + (gameStats.tetrisCount || 0),
-        maxLevel: Math.max(currentStats.maxLevel, gameStats.maxLevel || 0),
+        gamesPlayed: currentStats.gamesPlayed + 1,
+        tetrisCount: currentStats.tetrisCount + currentGame.tetrisCount,
+        maxLevel: Math.max(currentStats.maxLevel, currentGame.level),
         perfectClearCount:
-          currentStats.perfectClearCount + (gameStats.perfectClearCount || 0),
+          currentStats.perfectClearCount + (currentGame.isPerfectClear ? 1 : 0),
       },
     });
   } catch (error) {
@@ -79,19 +87,82 @@ async function updateStats(userId: string, gameStats: Partial<GameStats>) {
   }
 }
 
-async function checkAndUnlockAchievements(userId: string) {
+export async function getUserAchievements(
+  userId: string
+): Promise<ClientAchievement[]> {
+  try {
+    const userAchievements = await prisma.userAchievement.findMany({
+      where: { userId },
+    });
+
+    return userAchievements.map((ua) => {
+      const achievement = ACHIEVEMENTS.find((a) => a.id === ua.achievementId);
+      if (!achievement) {
+        throw new Error(`Achievement ${ua.achievementId} not found`);
+      }
+      return {
+        ...toClientAchievement(achievement),
+        unlockedAt: ua.unlockedAt,
+      };
+    });
+  } catch (error) {
+    console.error("Error fetching user achievements:", error);
+    throw error;
+  }
+}
+
+async function checkAndUnlockAchievements(
+  userId: string,
+  currentGame: GameSessionStats
+) {
   try {
     const stats = await getUserStats(userId);
     const userAchievements = await prisma.userAchievement.findMany({
       where: { userId },
       select: { achievementId: true },
     });
-    const unlockedIds = new Set(userAchievements.map((ua) => ua.achievementId));
 
+    const unlockedIds = new Set(userAchievements.map((ua) => ua.achievementId));
     let totalReward = 0;
-    const newlyUnlocked: Achievement[] = [];
+    const newlyUnlocked: ClientAchievement[] = [];
+
+    const currentGameStats = convertSessionToGameStats(currentGame, userId);
+
     for (const achievement of ACHIEVEMENTS) {
-      if (!unlockedIds.has(achievement.id) && achievement.condition(stats)) {
+      if (unlockedIds.has(achievement.id)) {
+        continue;
+      }
+
+      let conditionMet = false;
+      try {
+        switch (achievement.id) {
+          case "score-1000":
+          case "score-5000":
+          case "score-10000":
+          case "level-5":
+          case "level-10":
+          case "tetris":
+          case "perfect-clear":
+            conditionMet = achievement.condition(currentGameStats);
+            break;
+          case "first-game":
+          case "clear-10-lines":
+          case "clear-100-lines":
+            conditionMet = achievement.condition(stats);
+            break;
+          default:
+            conditionMet = achievement.condition(stats);
+        }
+      } catch (error) {
+        console.error(
+          `Error checking condition for achievement ${achievement.id}:`,
+          error
+        );
+        continue;
+      }
+
+      if (conditionMet) {
+        console.log(`Unlocking achievement: ${achievement.id}`);
         await prisma.userAchievement.create({
           data: {
             userId,
@@ -103,13 +174,20 @@ async function checkAndUnlockAchievements(userId: string) {
         if (achievement.reward) {
           totalReward += achievement.reward;
         }
-        newlyUnlocked.push(achievement);
+
+        const clientAchievement = toClientAchievement(achievement);
+        clientAchievement.unlockedAt = new Date();
+        newlyUnlocked.push(clientAchievement);
       }
     }
 
-    // If there were rewards, update the user's score
     if (totalReward > 0) {
-      await updateStats(userId, { totalScore: totalReward });
+      await prisma.gameStats.update({
+        where: { userId },
+        data: {
+          totalScore: stats.totalScore + totalReward,
+        },
+      });
     }
 
     return {
@@ -122,10 +200,13 @@ async function checkAndUnlockAchievements(userId: string) {
   }
 }
 
-export async function trackGameEnd(userId: string, gameStats: GameStats) {
+export async function trackGameEnd(
+  userId: string,
+  sessionStats: GameSessionStats
+) {
   try {
-    await updateStats(userId, gameStats);
-    return await checkAndUnlockAchievements(userId);
+    await updateStats(userId, sessionStats);
+    return await checkAndUnlockAchievements(userId, sessionStats);
   } catch (error) {
     console.error("Error tracking game end:", error);
     throw error;

@@ -1,4 +1,4 @@
-import type { Achievement } from "./achievements";
+import type { ClientAchievement } from "./achievements";
 export * from "./achievements";
 
 export interface User {
@@ -28,8 +28,32 @@ export interface TokenPayload {
   exp: number;
 }
 
+export interface GameStats {
+  userId: string;
+  totalScore: number;
+  highestScore: number;
+  totalLinesCleared: number;
+  maxLinesInOneGame: number;
+  gamesPlayed: number;
+  tetrisCount: number;
+  maxLevel: number;
+  perfectClearCount: number;
+}
+
 export interface GameSessionStats {
   score: number;
+  linesCleared: number;
+  level: number;
+  tetrisCount: number;
+  isPerfectClear: boolean;
+}
+
+export interface GameSession {
+  id: number;
+  userId: string;
+  score: number;
+  sessionStart: Date;
+  sessionEnd: Date | null;
   linesCleared: number;
   level: number;
   tetrisCount: number;
@@ -39,20 +63,10 @@ export interface GameSessionStats {
 export interface GameSessionResponse {
   success: boolean;
   sessionId?: number;
-  session?: {
-    id: number;
-    userId: string;
-    score: number;
-    sessionStart: Date;
-    sessionEnd: Date | null;
-    linesCleared: number;
-    level: number;
-    tetrisCount: number;
-    isPerfectClear: boolean;
-  };
+  session?: GameSession;
   message?: string;
   error?: string;
-  newAchievements?: Achievement[];
+  newAchievements?: ClientAchievement[];
   totalReward?: number;
 }
 
@@ -63,12 +77,12 @@ export interface ScoreProps {
 }
 
 export interface AchievementUnlockResponse {
-  newAchievements: Achievement[];
+  newAchievements: ClientAchievement[];
   totalReward: number;
 }
 
 export interface AchievementProgress {
-  achievement: Achievement;
+  achievement: ClientAchievement;
   progress: number;
   isUnlocked: boolean;
   unlockedAt?: Date;

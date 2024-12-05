@@ -3,7 +3,7 @@
 import { prisma } from "@/utils/PrismaClient";
 import { highScoreController } from "./highScoreController";
 import { trackGameEnd } from "./AchievementController";
-import type { GameSessionStats, GameStats } from "@/types/index";
+import type { GameSessionStats } from "@/types/index";
 
 export async function startSession(userId: string) {
   try {
@@ -48,18 +48,7 @@ export async function endSession(sessionId: number, stats: GameSessionStats) {
       stats.score
     );
 
-    const gameStats: GameStats = {
-      totalScore: stats.score,
-      highestScore: stats.score,
-      totalLinesCleared: stats.linesCleared,
-      maxLinesInOneGame: stats.linesCleared,
-      gamesPlayed: 1,
-      tetrisCount: stats.tetrisCount,
-      maxLevel: stats.level,
-      perfectClearCount: stats.isPerfectClear ? 1 : 0,
-    };
-
-    const achievementResult = await trackGameEnd(session.userId, gameStats);
+    const achievementResult = await trackGameEnd(session.userId, stats);
 
     return {
       success: true,

@@ -14,21 +14,90 @@ interface HighScore {
 
 export default function Home() {
   const [highScores, setHighScores] = useState<HighScore[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // First try to get cached data
+    const cached = localStorage.getItem("highScores");
+    if (cached) {
+      setHighScores(JSON.parse(cached));
+      setIsLoading(false);
+    }
+
     const fetchHighScores = async () => {
       try {
         const response = await fetch("/api/highscores?limit=5");
         if (!response.ok) throw new Error("Failed to fetch");
         const data = await response.json();
+
+        localStorage.setItem("highScores", JSON.stringify(data));
         setHighScores(data);
       } catch (error) {
         console.error("Error fetching high scores:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     fetchHighScores();
   }, []);
+
+  const renderHighScores = () => {
+    if (isLoading) {
+      return (
+        <div className="space-y-3">
+          {[...Array(5)].map((_, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between bg-gray-900/50 p-3 rounded-lg animate-pulse"
+            >
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-6 bg-gray-700 rounded"></div>
+                <div className="w-24 h-6 bg-gray-700 rounded"></div>
+              </div>
+              <div className="w-16 h-6 bg-gray-700 rounded"></div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    if (highScores.length === 0) {
+      return (
+        <div className="text-center text-gray-400 py-8">
+          <p>No high scores yet!</p>
+          <p className="text-sm mt-2">Be the first to set a record!</p>
+        </div>
+      );
+    }
+
+    return highScores.map((score, index) => (
+      <div
+        key={score.id}
+        className="flex items-center justify-between bg-gray-900/50 p-3 rounded-lg"
+      >
+        <div className="flex items-center space-x-3">
+          <span
+            className={`text-lg font-bold ${
+              index === 0
+                ? "text-yellow-400"
+                : index === 1
+                ? "text-gray-300"
+                : index === 2
+                ? "text-orange-400"
+                : "text-gray-500"
+            }`}
+          >
+            #{index + 1}
+          </span>
+          <span className="text-white">{score.user.username}</span>
+        </div>
+        <span className="text-blue-400 font-mono">
+          {score.score.toLocaleString()}
+        </span>
+      </div>
+    ));
+  };
 
   return (
     <>
@@ -77,40 +146,7 @@ export default function Home() {
           <div className="lg:w-96 bg-gray-800/80 backdrop-blur-sm p-6 rounded-xl shadow-lg">
             <h2 className="text-2xl font-bold text-white mb-4">Top Players</h2>
             <div className="space-y-4">
-              {highScores.map((score, index) => (
-                <div
-                  key={score.id}
-                  className="flex items-center justify-between bg-gray-900/50 p-3 rounded-lg"
-                >
-                  <div className="flex items-center space-x-3">
-                    <span
-                      className={`text-lg font-bold ${
-                        index === 0
-                          ? "text-yellow-400"
-                          : index === 1
-                          ? "text-gray-300"
-                          : index === 2
-                          ? "text-orange-400"
-                          : "text-gray-500"
-                      }`}
-                    >
-                      #{index + 1}
-                    </span>
-                    <span className="text-white">{score.user.username}</span>
-                  </div>
-                  <span className="text-blue-400 font-mono">
-                    {score.score.toLocaleString()}
-                  </span>
-                </div>
-              ))}
-
-              {highScores.length === 0 && (
-                <div className="text-center text-gray-400 py-8">
-                  <p>No high scores yet!</p>
-                  <p className="text-sm mt-2">Be the first to set a record!</p>
-                </div>
-              )}
-
+              {renderHighScores()}
               <Link
                 href="/auth/login"
                 className="block text-center text-blue-400 hover:text-blue-300 mt-4"

@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { startGameSession } from "@/app/helper/gameActions";
 
 interface GameStatusProps {
   isPlaying: boolean;
@@ -15,6 +16,62 @@ const GameStatus: React.FC<GameStatusProps> = ({
   score,
   onStart,
 }) => {
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await fetch("/api/user", {
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          throw new Error("Response is not JSON");
+        }
+
+        const data = await response.json();
+        if (data.user && data.user.id) {
+          setUserId(data.user.id);
+        }
+      } catch (error) {
+        console.error("Error fetching user:", error);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+  const handleStartGame = async () => {
+    if (!userId) {
+      console.error("No user ID available");
+      return;
+    }
+
+    try {
+      console.log("Starting game with userId:", userId);
+
+      onStart();
+
+      const result = await startGameSession(userId);
+      console.log("Session start result:", result);
+
+      if (!result.success) {
+        console.error("Failed to start game session:", result.error);
+      }
+    } catch (error) {
+      console.error("Full error details:", error);
+    }
+  };
+
   if (!isPlaying) {
     return (
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center">
@@ -43,7 +100,7 @@ const GameStatus: React.FC<GameStatusProps> = ({
           )}
 
           <button
-            onClick={onStart}
+            onClick={handleStartGame}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-colors"
           >
             {score > 0 ? "Play Again" : "Start Game"}

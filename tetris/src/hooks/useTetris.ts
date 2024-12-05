@@ -7,6 +7,7 @@ import {
   EmptyCell,
   SHAPES,
 } from "@/types/types";
+import type { GameSessionStats } from "@/types/index";
 import { useInterval } from "@/hooks/useIntervals";
 import {
   useTetrisBoard,
@@ -22,14 +23,12 @@ enum TickSpeed {
   Fast = 30,
 }
 
-interface structuredClone {
-  (obj: any): any;
-}
-
-export function useTetris(gameOverCallback: () => void) {
+export function useTetris(gameOverCallback: (stats: GameSessionStats) => void) {
   const [score, setScore] = useState(0);
   const [linesCleared, setLinesCleared] = useState(0);
   const [level, setLevel] = useState(1);
+  const [tetrisCount, setTetrisCount] = useState(0);
+  const [isPerfectClear, setIsPerfectClear] = useState(false);
   const [upcomingBlocks, setUpcomingBlocks] = useState<Block[]>([]);
   const [isCommitting, setIsCommitting] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -41,13 +40,11 @@ export function useTetris(gameOverCallback: () => void) {
     dispatchBoardState,
   ] = useTetrisBoard();
 
-  // Calculate level based on lines cleared
   useEffect(() => {
     const newLevel = Math.floor(linesCleared / 10) + 1;
     setLevel(newLevel);
   }, [linesCleared]);
 
-  // Calculate game speed based on level
   const calculateGameSpeed = useCallback((currentLevel: number) => {
     const newSpeed = TickSpeed.Normal - (currentLevel - 1) * 60;
     return Math.max(newSpeed, 200);
@@ -61,7 +58,6 @@ export function useTetris(gameOverCallback: () => void) {
     return ghostRow;
   }
 
-  // Pause and Resume functions
   const pauseGame = useCallback(() => {
     if (isPlaying && !isPaused) {
       setIsPaused(true);
@@ -95,6 +91,8 @@ export function useTetris(gameOverCallback: () => void) {
     setScore(0);
     setLinesCleared(0);
     setLevel(1);
+    setTetrisCount(0);
+    setIsPerfectClear(false);
     setUpcomingBlocks(startingBlocks);
     setIsCommitting(false);
     setIsPlaying(true);
@@ -119,31 +117,63 @@ export function useTetris(gameOverCallback: () => void) {
       droppingColumn
     );
 
-    let numCleared = 0;
+    let clearedRows: number[] = [];
     for (let row = BOARD_HEIGHT - 1; row >= 0; row--) {
       if (newBoard[row].every((entry) => entry !== EmptyCell.Empty)) {
-        numCleared++;
-        newBoard.splice(row, 1);
+        clearedRows.push(row);
+      }
+    }
+
+    clearedRows.sort((a, b) => b - a);
+
+    clearedRows.forEach((row) => {
+      newBoard.splice(row, 1);
+    });
+
+    const numCleared = clearedRows.length;
+
+    if (numCleared === 4) {
+      clearedRows.sort((a, b) => a - b);
+      const isConsecutive = clearedRows.every(
+        (row, index) => index === 0 || row === clearedRows[index - 1] + 1
+      );
+      if (isConsecutive) {
+        console.log("TETRIS!");
+        setTetrisCount((prev) => prev + 1);
       }
     }
 
     setLinesCleared((prev) => prev + numCleared);
 
+    const remainingRows = newBoard.length;
+    const isPerfect =
+      remainingRows === 0 ||
+      newBoard.every((row) => row.every((cell) => cell === EmptyCell.Empty));
+    setIsPerfectClear(isPerfect);
+
     const newUpcomingBlocks = structuredClone(upcomingBlocks) as Block[];
     const newBlock = newUpcomingBlocks.pop() as Block;
     newUpcomingBlocks.unshift(getRandomBlock());
+
+    const currentScore = score + getPoints(numCleared);
+    setScore(currentScore);
 
     if (hasCollisions(board, SHAPES[newBlock].shape, 0, 3)) {
       setIsPlaying(false);
       setTickSpeed(null);
       setIsPaused(false);
-      gameOverCallback();
+      gameOverCallback({
+        score: currentScore,
+        linesCleared,
+        level,
+        tetrisCount,
+        isPerfectClear: isPerfect,
+      });
     } else {
       setTickSpeed(calculateGameSpeed(level));
     }
 
     setUpcomingBlocks(newUpcomingBlocks);
-    setScore((prevScore) => prevScore + getPoints(numCleared));
     dispatchBoardState({
       type: "commit",
       newBoard: [...getEmptyBoard(BOARD_HEIGHT - newBoard.length), ...newBoard],
@@ -159,6 +189,9 @@ export function useTetris(gameOverCallback: () => void) {
     droppingShape,
     upcomingBlocks,
     level,
+    score,
+    linesCleared,
+    tetrisCount,
     gameOverCallback,
     calculateGameSpeed,
   ]);
@@ -230,7 +263,6 @@ export function useTetris(gameOverCallback: () => void) {
         return;
       }
 
-      // Only handle other keys if game is not paused
       if (!isPaused) {
         if (event.code === "Space") {
           event.preventDefault();
@@ -331,6 +363,8 @@ export function useTetris(gameOverCallback: () => void) {
     level,
     linesCleared,
     upcomingBlocks,
+    tetrisCount,
+    isPerfectClear,
   };
 }
 

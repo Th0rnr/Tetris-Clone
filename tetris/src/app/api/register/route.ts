@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { RegisterController } from "@/app/controllers/registerController";
+import { register } from "@/app/controllers/registerController";
+
 export async function POST(request: NextRequest) {
   try {
     const { email, username, password } = await request.json();
@@ -11,7 +12,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const result = await RegisterController.register({
+    const result = await register({
       email,
       username,
       password,

@@ -1,8 +1,13 @@
 "use server";
 
-import { RegisterController } from "@/app/controllers/registerController";
+import { register as registerUser } from "@/app/controllers/registerController";
 
-export async function register(formData: FormData) {
+interface RegisterResponse {
+  success: boolean;
+  error?: string | null;
+}
+
+export async function register(formData: FormData): Promise<RegisterResponse> {
   try {
     console.log("Starting registration process...");
 
@@ -17,7 +22,7 @@ export async function register(formData: FormData) {
       };
     }
 
-    const result = await RegisterController.register({
+    const result = await registerUser({
       email,
       username,
       password,

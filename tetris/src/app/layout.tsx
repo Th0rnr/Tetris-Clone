@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { cookies } from "next/headers";
-import { LoginController } from "@/app/controllers/loginController";
+import { getUserFromToken } from "@/app/controllers/loginController";
 import Navbar from "@/components/ui/Navbar";
 import "./globals.css";
 
@@ -33,7 +33,7 @@ export default async function RootLayout({
 
   if (token) {
     try {
-      user = await LoginController.getUserFromToken(token.value);
+      user = await getUserFromToken(token.value);
     } catch (error) {
       console.error("Error getting user:", error);
     }

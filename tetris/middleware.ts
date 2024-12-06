@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { LoginController } from "@/app/controllers/loginController";
+import { validateToken } from "@/app/controllers/loginController";
 
 export async function middleware(request: NextRequest) {
   const isPublicPath =
@@ -16,7 +16,7 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get("access_token")?.value;
 
   if (isPublicPath && token) {
-    const isValidToken = await LoginController.validateToken(token);
+    const isValidToken = await validateToken(token);
     if (isValidToken && request.nextUrl.pathname === "/auth/login") {
       return NextResponse.redirect(new URL("/private/game", request.url));
     }
@@ -32,7 +32,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (token) {
-    const isValidToken = await LoginController.validateToken(token);
+    const isValidToken = await validateToken(token);
     if (!isValidToken && (!isPublicPath || isProtectedApiPath)) {
       if (request.nextUrl.pathname.startsWith("/api/")) {
         return NextResponse.json({ error: "Invalid token" }, { status: 401 });

@@ -1,6 +1,9 @@
 "use server";
 
-import { LoginController } from "@/app/controllers/loginController";
+import {
+  login as loginFn,
+  logout as logoutFn,
+} from "@/app/controllers/loginController";
 
 export async function login(formData: FormData) {
   try {
@@ -16,7 +19,7 @@ export async function login(formData: FormData) {
       };
     }
 
-    const result = await LoginController.login(email, password);
+    const result = await loginFn(email, password);
     console.log("Login result:", result);
 
     return {
@@ -35,7 +38,7 @@ export async function login(formData: FormData) {
 
 export async function logout() {
   try {
-    await LoginController.logout();
+    await logoutFn();
     return { success: true };
   } catch (error) {
     console.error("Logout error:", error);

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { LoginController } from "@/app/controllers/loginController";
+import { getUserFromToken } from "@/app/controllers/loginController";
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const user = await LoginController.getUserFromToken(token);
+    const user = await getUserFromToken(token);
     if (!user) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }

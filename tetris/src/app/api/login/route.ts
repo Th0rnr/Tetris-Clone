@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { LoginController } from "@/app/controllers/loginController";
+import { login } from "@/app/controllers/loginController";
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = await LoginController.login(email, password);
+    const user = await login(email, password);
     return NextResponse.json({ user });
   } catch (error) {
     console.error("Login error:", error);

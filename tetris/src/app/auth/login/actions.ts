@@ -7,10 +7,9 @@ import {
 
 export async function login(formData: FormData) {
   try {
-    console.log("Starting login process...");
-
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
+    const rememberMe = formData.get("rememberMe") === "on";
 
     if (!email || !password) {
       return {
@@ -19,7 +18,7 @@ export async function login(formData: FormData) {
       };
     }
 
-    const result = await loginFn(email, password);
+    const result = await loginFn(email, password, rememberMe);
     console.log("Login result:", result);
 
     return {

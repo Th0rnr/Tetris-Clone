@@ -3,7 +3,7 @@ import {
   getUserAchievements,
   getUserStats,
 } from "@/app/controllers/AchievementController";
-import { LoginController } from "@/app/controllers/loginController";
+import { validateToken } from "@/app/controllers/loginController";
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const user = await LoginController.validateToken(token);
+    const user = await validateToken(token);
     if (!user) {
       return NextResponse.json(
         { success: false, error: "Invalid token" },

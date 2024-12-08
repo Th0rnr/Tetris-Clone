@@ -94,6 +94,17 @@ export default function LoginPage() {
               />
             </div>
 
+            <div className="flex items-center justify-between">
+              <label className="flex items-center">
+                <input
+                  type="checkbox"
+                  name="rememberMe"
+                  className="rounded bg-gray-700 border-gray-600 text-blue-500 focus:ring-blue-500"
+                />
+                <span className="ml-2 text-sm text-gray-300">Remember me</span>
+              </label>
+            </div>
+
             <button
               type="submit"
               className="w-full bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-colors"

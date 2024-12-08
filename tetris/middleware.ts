@@ -1,5 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { validateToken } from "@/app/controllers/loginController";
+import {
+  validateToken,
+  validateRefreshToken,
+  refreshAccessToken,
+} from "@/app/controllers/loginController";
 
 export async function middleware(request: NextRequest) {
   const isPublicPath =
@@ -33,15 +37,27 @@ export async function middleware(request: NextRequest) {
 
   if (token) {
     const isValidToken = await validateToken(token);
-    if (!isValidToken && (!isPublicPath || isProtectedApiPath)) {
-      if (request.nextUrl.pathname.startsWith("/api/")) {
-        return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    if (!isValidToken) {
+      const refreshToken = request.cookies.get("refresh_token")?.value;
+      if (refreshToken) {
+        const isValidRefreshToken = await validateRefreshToken(refreshToken);
+        if (isValidRefreshToken) {
+          await refreshAccessToken(refreshToken);
+          return NextResponse.next();
+        }
       }
-      const response = NextResponse.redirect(
-        new URL("/auth/login", request.url)
-      );
-      response.cookies.delete("access_token");
-      return response;
+
+      if (!isPublicPath || isProtectedApiPath) {
+        if (request.nextUrl.pathname.startsWith("/api/")) {
+          return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+        }
+        const response = NextResponse.redirect(
+          new URL("/auth/login", request.url)
+        );
+        response.cookies.delete("access_token");
+        response.cookies.delete("refresh_token");
+        return response;
+      }
     }
   }
 
@@ -49,14 +65,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    "/((?!_next/static|_next/image|favicon.ico).*)",
-    "/api/:path*",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)", "/api/:path*"],
 };

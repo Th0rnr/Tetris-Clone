@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/utils/PrismaClient";
-import { highScoreController } from "./highScoreController";
+import { checkAndUpdateHighScore } from "./highScoreController";
 import { trackGameEnd } from "./AchievementController";
 import type { GameSessionStats } from "@/types/index";
 
@@ -43,10 +43,7 @@ export async function endSession(sessionId: number, stats: GameSessionStats) {
       },
     });
 
-    await highScoreController.checkAndUpdateHighScore(
-      session.userId,
-      stats.score
-    );
+    await checkAndUpdateHighScore(session.userId, stats.score);
 
     const achievementResult = await trackGameEnd(session.userId, stats);
 

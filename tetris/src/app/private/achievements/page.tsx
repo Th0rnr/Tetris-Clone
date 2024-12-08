@@ -19,27 +19,29 @@ import {
 } from "lucide-react";
 
 export default function AchievementsPage() {
-  const [achievements, setAchievements] = useState<ClientAchievement[]>(() => {
-    if (typeof window !== "undefined") {
-      const cached = localStorage.getItem("achievements");
-      return cached ? JSON.parse(cached) : [];
-    }
-    return [];
-  });
-
-  const [stats, setStats] = useState<GameStats | null>(() => {
-    if (typeof window !== "undefined") {
-      const cached = localStorage.getItem("achievementStats");
-      return cached ? JSON.parse(cached) : null;
-    }
-    return null;
-  });
-
+  const [achievements, setAchievements] = useState<ClientAchievement[]>([]);
+  const [stats, setStats] = useState<GameStats | null>(null);
+  const [initialized, setInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<
     AchievementCategory | "ALL"
   >("ALL");
+
+  useEffect(() => {
+    if (!initialized) {
+      const cachedAchievements = localStorage.getItem("achievements");
+      const cachedStats = localStorage.getItem("achievementStats");
+
+      if (cachedAchievements) {
+        setAchievements(JSON.parse(cachedAchievements));
+      }
+      if (cachedStats) {
+        setStats(JSON.parse(cachedStats));
+      }
+      setInitialized(true);
+    }
+  }, [initialized]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -106,6 +108,14 @@ export default function AchievementsPage() {
       return matchesSearch && matchesCategory;
     });
   }, [achievements, searchQuery, selectedCategory]);
+
+  if (!initialized) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <div className="text-white text-2xl">Loading achievements...</div>
+      </div>
+    );
+  }
 
   if (error || !stats) {
     return (

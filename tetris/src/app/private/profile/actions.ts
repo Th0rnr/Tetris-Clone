@@ -101,6 +101,36 @@ export async function uploadProfilePicture(userId: string, file: File) {
   }
 }
 
+export async function deleteProfilePicture(userId: string) {
+  try {
+    const fileName = `avatar_${userId}.jpg`;
+
+    await supabase.storage.from("avatars").remove([fileName]);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        profilePicture: null,
+        updatedAt: new Date(),
+      },
+    });
+
+    return {
+      success: true,
+      message: "Profile picture deleted successfully",
+    };
+  } catch (error) {
+    console.error("Error deleting profile picture:", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to delete profile picture",
+    };
+  }
+}
+
 export async function updatePassword(
   userId: string,
   currentPassword: string,

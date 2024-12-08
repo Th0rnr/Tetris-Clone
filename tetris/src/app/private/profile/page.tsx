@@ -8,6 +8,7 @@ import {
   updateUsername,
   uploadProfilePicture,
   updatePassword,
+  deleteProfilePicture,
 } from "./actions";
 
 interface User {
@@ -110,6 +111,28 @@ export default function Profile() {
     }
   };
 
+  const handleDeleteProfilePicture = async () => {
+    if (!user) return;
+
+    setIsLoading(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      const result = await deleteProfilePicture(user.id);
+      if (result.success) {
+        setSuccess("Profile picture deleted successfully!");
+        setUser((prev) => (prev ? { ...prev, profilePicture: null } : null));
+      } else {
+        setError(result.error ?? "Failed to delete profile picture");
+      }
+    } catch (error) {
+      setError("Failed to delete profile picture");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handlePasswordUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -191,17 +214,30 @@ export default function Profile() {
                     </div>
                   )}
                 </div>
-                <label className="block">
-                  <span className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg cursor-pointer">
-                    Choose Image
-                  </span>
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                  />
-                </label>
+                <div>
+                  {user.profilePicture ? (
+                    <button
+                      onClick={handleDeleteProfilePicture}
+                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg"
+                      type="button"
+                      disabled={isLoading}
+                    >
+                      Delete Image
+                    </button>
+                  ) : (
+                    <label className="block">
+                      <span className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg cursor-pointer">
+                        Choose Image
+                      </span>
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                      />
+                    </label>
+                  )}
+                </div>
               </div>
             </div>
 

@@ -44,7 +44,7 @@ const GameBoard: React.FC<GameBoardProps> = ({ board }) => {
   };
 
   return (
-    <div className="bg-gray-900/60 p-4 rounded-xl backdrop-blur-md border border-gray-700 shadow-lg">
+    <div className="bg-gray-900/60 p-4 rounded-xl backdrop-blur-md border border-gray-700 shadow-lg touch-none select-none">
       {board.map((row, rowIndex) => (
         <div key={rowIndex} className="flex">
           {row.map((cell, colIndex) => (

@@ -232,6 +232,9 @@ export function useTetris(gameOverCallback: (stats: GameSessionStats) => void) {
     let isPressingLeft = false;
     let isPressingRight = false;
     let moveIntervalID: ReturnType<typeof setInterval> | undefined;
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchStartTime = 0;
 
     const updateMovementInterval = () => {
       clearInterval(moveIntervalID);
@@ -247,6 +250,61 @@ export function useTetris(gameOverCallback: (stats: GameSessionStats) => void) {
           isPressingRight,
         });
       }, 300);
+    };
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (isPaused) return;
+      const touch = e.touches[0];
+      touchStartX = touch.clientX;
+      touchStartY = touch.clientY;
+      touchStartTime = Date.now();
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (isPaused) return;
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - touchStartX;
+      const deltaY = touch.clientY - touchStartY;
+      const minSwipeDistance = 30;
+
+      if (
+        Math.abs(deltaX) > Math.abs(deltaY) &&
+        Math.abs(deltaX) > minSwipeDistance
+      ) {
+        isPressingLeft = deltaX < 0;
+        isPressingRight = deltaX > 0;
+        updateMovementInterval();
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+      } else if (deltaY > minSwipeDistance) {
+        setTickSpeed(TickSpeed.Fast);
+      }
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (isPaused) return;
+      const touch = e.changedTouches[0];
+      const deltaX = touch.clientX - touchStartX;
+      const deltaY = touch.clientY - touchStartY;
+      const touchDuration = Date.now() - touchStartTime;
+
+      isPressingLeft = false;
+      isPressingRight = false;
+      updateMovementInterval();
+      setTickSpeed(calculateGameSpeed(level));
+
+      if (
+        touchDuration < 200 &&
+        Math.abs(deltaX) < 10 &&
+        Math.abs(deltaY) < 10
+      ) {
+        dispatchBoardState({
+          type: "move",
+          isRotating: true,
+        });
+      } else if (deltaY > 100 && touchDuration < 300) {
+        hardDrop();
+      }
     };
 
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -313,10 +371,16 @@ export function useTetris(gameOverCallback: (stats: GameSessionStats) => void) {
 
     document.addEventListener("keydown", handleKeyDown);
     document.addEventListener("keyup", handleKeyUp);
+    document.addEventListener("touchstart", handleTouchStart);
+    document.addEventListener("touchmove", handleTouchMove);
+    document.addEventListener("touchend", handleTouchEnd);
 
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("keyup", handleKeyUp);
+      document.removeEventListener("touchstart", handleTouchStart);
+      document.removeEventListener("touchmove", handleTouchMove);
+      document.removeEventListener("touchend", handleTouchEnd);
       clearInterval(moveIntervalID);
       setTickSpeed(calculateGameSpeed(level));
     };

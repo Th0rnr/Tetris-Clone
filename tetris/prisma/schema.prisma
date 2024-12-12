@@ -17,8 +17,8 @@ model User {
   updatedAt       DateTime       @updatedAt
   gameSessions    GameSession[]
   highScores      HighScore[]
-   gameStats       GameStats?        // Add relation to GameStats
-  achievements    UserAchievement[] // Add relation to UserAchievement
+   gameStats       GameStats?       
+  achievements    UserAchievement[] 
 
   @@map("users")
 }

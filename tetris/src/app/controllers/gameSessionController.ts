@@ -43,7 +43,10 @@ export async function endSession(sessionId: number, stats: GameSessionStats) {
       },
     });
 
-    await checkAndUpdateHighScore(session.userId, stats.score);
+    const highScoreResult = await checkAndUpdateHighScore(
+      session.userId,
+      stats.score
+    );
 
     const achievementResult = await trackGameEnd(session.userId, stats);
 
@@ -51,6 +54,7 @@ export async function endSession(sessionId: number, stats: GameSessionStats) {
       success: true,
       session,
       ...achievementResult,
+      isNewHighScore: highScoreResult.isNewHighScore,
       message: "Game session ended",
     };
   } catch (error) {

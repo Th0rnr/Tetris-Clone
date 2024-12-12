@@ -68,6 +68,7 @@ export interface GameSessionResponse {
   error?: string;
   newAchievements?: ClientAchievement[];
   totalReward?: number;
+  isNewHighScore?: boolean;
 }
 
 export interface ScoreProps {

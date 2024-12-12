@@ -8,13 +8,17 @@ import UpcomingBlocks from "./UpcomingBlocks";
 import ScoreBoard from "./ScoreBoard";
 import { startGameSession, endGameSession } from "@/app/helper/gameActions";
 import type { GameSessionStats } from "@/types/index";
+import type { ClientAchievement } from "@/types/achievements";
 
 const TetrisGame = () => {
   const [currentSessionId, setCurrentSessionId] = useState<number | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [newAchievements, setNewAchievements] = useState<ClientAchievement[]>(
+    []
+  );
+  const [isNewHighScore, setIsNewHighScore] = useState(false);
 
-  // Prevent arrow keys from scrolling the page
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (
@@ -99,6 +103,12 @@ const TetrisGame = () => {
           throw new Error("Failed to end game session");
         }
 
+        if (result.newAchievements) {
+          setNewAchievements(result.newAchievements);
+        }
+
+        setIsNewHighScore(!!result.isNewHighScore);
+
         setCurrentSessionId(null);
       } catch (error) {
         console.error("Error ending game session:", error);
@@ -120,6 +130,8 @@ const TetrisGame = () => {
   } = useTetris(handleGameOver);
 
   const handleStartGame = async () => {
+    setNewAchievements([]);
+    setIsNewHighScore(false);
     const sessionStarted = await handleGameStart();
     if (sessionStarted) {
       startGame();
@@ -145,6 +157,8 @@ const TetrisGame = () => {
           isPaused={isPaused}
           score={score}
           onStart={handleStartGame}
+          newAchievements={newAchievements}
+          isNewHighScore={isNewHighScore}
         />
       </div>
 

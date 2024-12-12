@@ -1,13 +1,17 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { Trophy } from "lucide-react";
 import { startGameSession } from "@/app/helper/gameActions";
+import type { ClientAchievement } from "@/types/achievements";
 
 interface GameStatusProps {
   isPlaying: boolean;
   isPaused: boolean;
   score: number;
   onStart: () => void;
+  newAchievements?: ClientAchievement[];
+  isNewHighScore?: boolean;
 }
 
 const GameStatus: React.FC<GameStatusProps> = ({
@@ -15,6 +19,8 @@ const GameStatus: React.FC<GameStatusProps> = ({
   isPaused,
   score,
   onStart,
+  newAchievements = [],
+  isNewHighScore = false,
 }) => {
   const [userId, setUserId] = useState<string | null>(null);
 
@@ -57,12 +63,8 @@ const GameStatus: React.FC<GameStatusProps> = ({
     }
 
     try {
-      console.log("Starting game with userId:", userId);
-
       onStart();
-
       const result = await startGameSession(userId);
-      console.log("Session start result:", result);
 
       if (!result.success) {
         console.error("Failed to start game session:", result.error);
@@ -80,11 +82,42 @@ const GameStatus: React.FC<GameStatusProps> = ({
             <>
               <h2 className="text-3xl font-bold text-white mb-4">Game Over</h2>
               <div className="mb-6">
-                <p className="text-gray-400 mb-2">Final Score</p>
+                <p className="text-gray-400 mb-2">
+                  {isNewHighScore ? "New High Score!" : "Final Score"}
+                </p>
                 <p className="text-4xl font-bold text-yellow-400">
                   {score.toLocaleString()}
                 </p>
               </div>
+
+              {newAchievements.length > 0 && (
+                <div className="mb-6 border-t border-gray-700 pt-4">
+                  <p className="text-gray-400 mb-3">Achievements Unlocked!</p>
+                  <div className="space-y-3">
+                    {newAchievements.map((achievement) => (
+                      <div
+                        key={achievement.id}
+                        className="bg-gray-800 rounded-lg p-3 flex items-start gap-3 text-left"
+                      >
+                        <Trophy className="h-5 w-5 text-yellow-500 flex-shrink-0 mt-1" />
+                        <div>
+                          <p className="font-medium text-white">
+                            {achievement.title}
+                          </p>
+                          <p className="text-sm text-gray-400">
+                            {achievement.description}
+                          </p>
+                          {achievement.reward && (
+                            <p className="text-sm text-yellow-500 mt-1">
+                              +{achievement.reward} points
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <h2 className="text-3xl font-bold text-white mb-6">

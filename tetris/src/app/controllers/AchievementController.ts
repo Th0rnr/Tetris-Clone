@@ -9,6 +9,12 @@ import {
 import { Achievement, ACHIEVEMENTS } from "@/types/achievements";
 import type { ClientAchievement } from "@/types/achievements";
 
+interface UserAchievement {
+  userId: string;
+  achievementId: string;
+  unlockedAt: Date;
+}
+
 function toClientAchievement(achievement: Achievement): ClientAchievement {
   const { condition, ...clientAchievement } = achievement;
   return clientAchievement;
@@ -68,7 +74,7 @@ export async function getUserAchievements(
       where: { userId },
     });
 
-    return userAchievements.map((ua) => {
+    return userAchievements.map((ua: UserAchievement) => {
       const achievement = ACHIEVEMENTS.find((a) => a.id === ua.achievementId);
       if (!achievement) {
         throw new Error(`Achievement ${ua.achievementId} not found`);
@@ -115,6 +121,10 @@ async function updateStats(
   }
 }
 
+interface UserAchievementSelect {
+  achievementId: string;
+}
+
 async function checkAndUnlockAchievements(
   userId: string,
   currentGame: GameSessionStats
@@ -126,7 +136,9 @@ async function checkAndUnlockAchievements(
       select: { achievementId: true },
     });
 
-    const unlockedIds = new Set(userAchievements.map((ua) => ua.achievementId));
+    const unlockedIds = new Set(
+      userAchievements.map((ua: UserAchievementSelect) => ua.achievementId)
+    );
     let totalReward = 0;
     const newlyUnlocked: ClientAchievement[] = [];
 

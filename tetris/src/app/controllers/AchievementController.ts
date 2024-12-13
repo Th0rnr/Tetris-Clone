@@ -16,7 +16,7 @@ interface UserAchievement {
 }
 
 function toClientAchievement(achievement: Achievement): ClientAchievement {
-  const { condition, ...clientAchievement } = achievement;
+  const { condition, progress, ...clientAchievement } = achievement;
   return clientAchievement;
 }
 

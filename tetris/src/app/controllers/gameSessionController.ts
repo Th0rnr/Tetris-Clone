@@ -47,13 +47,13 @@ export async function endSession(sessionId: number, stats: GameSessionStats) {
       session.userId,
       stats.score
     );
-
-    const achievementResult = await trackGameEnd(session.userId, stats);
+    const achievements = await trackGameEnd(session.userId, stats);
 
     return {
       success: true,
       session,
-      ...achievementResult,
+      newAchievements: achievements.newAchievements,
+      totalReward: achievements.totalReward,
       isNewHighScore: highScoreResult.isNewHighScore,
       message: "Game session ended",
     };

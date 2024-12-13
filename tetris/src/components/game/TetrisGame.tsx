@@ -29,9 +29,7 @@ const TetrisGame = () => {
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
   useEffect(() => {
@@ -41,14 +39,10 @@ const TetrisGame = () => {
           credentials: "include",
         });
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch user data");
-        }
+        if (!response.ok) throw new Error("Failed to fetch user data");
 
         const data = await response.json();
-        if (data.user) {
-          setUserId(data.user.id);
-        }
+        if (data.user) setUserId(data.user.id);
       } catch (error) {
         console.error("Error fetching user:", error);
         setError("Failed to authenticate user");

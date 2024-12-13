@@ -9,8 +9,6 @@ import type { GameSessionResponse, GameSessionStats } from "@/types/index";
 export async function startGameSession(
   userId: string
 ): Promise<GameSessionResponse> {
-  console.log("Starting game session for user:", userId);
-
   if (!userId) {
     return { success: false, error: "No userId provided" };
   }
@@ -33,8 +31,6 @@ export async function endGameSession(
   sessionId: number,
   stats: GameSessionStats
 ): Promise<GameSessionResponse> {
-  console.log("Ending game session:", sessionId, "with stats:", stats);
-
   if (!sessionId) {
     return { success: false, error: "No sessionId provided" };
   }

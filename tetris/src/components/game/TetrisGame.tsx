@@ -89,15 +89,13 @@ const TetrisGame = () => {
       }
 
       try {
-        const gameStats: GameSessionStats = {
+        const result = await endGameSession(currentSessionId, {
           score: stats.score,
           linesCleared: stats.linesCleared,
           level: stats.level,
           tetrisCount: stats.tetrisCount,
           isPerfectClear: stats.isPerfectClear,
-        };
-
-        const result = await endGameSession(currentSessionId, gameStats);
+        });
 
         if (!result.success) {
           throw new Error("Failed to end game session");
@@ -108,7 +106,6 @@ const TetrisGame = () => {
         }
 
         setIsNewHighScore(!!result.isNewHighScore);
-
         setCurrentSessionId(null);
       } catch (error) {
         console.error("Error ending game session:", error);
@@ -139,18 +136,23 @@ const TetrisGame = () => {
   };
 
   return (
-    <div className="flex flex-col md:flex-row justify-center items-start gap-8 p-4 min-h-screen bg-gray-900">
+    <div className="flex flex-col md:flex-row items-center md:items-start justify-center gap-4 md:gap-8 p-4 min-h-screen bg-gray-900">
       {error && (
-        <div className="absolute top-4 right-4 bg-red-500/10 border border-red-500 text-red-500 px-4 py-2 rounded">
+        <div className="fixed top-4 right-4 bg-red-500/10 border border-red-500 text-red-500 px-4 py-2 rounded">
           {error}
         </div>
       )}
 
-      <div className="hidden md:flex flex-col gap-6">
+      <div className="w-full md:w-auto flex md:flex-col gap-4">
         <ScoreBoard score={score} level={level} linesCleared={linesCleared} />
+        {isPlaying && (
+          <div className="text-center text-sm text-gray-400 bg-gray-800/50 rounded-lg px-3 py-2 hidden md:block">
+            Press ESC to {isPaused ? "resume" : "pause"}
+          </div>
+        )}
       </div>
 
-      <div className="relative">
+      <div className="relative w-full md:w-auto">
         <GameBoard board={board} />
         <GameStatus
           isPlaying={isPlaying}
@@ -162,10 +164,10 @@ const TetrisGame = () => {
         />
       </div>
 
-      <div className="hidden md:flex flex-col gap-6">
+      <div className="w-full md:w-auto flex md:flex-col gap-4">
         <UpcomingBlocks blocks={upcomingBlocks} />
         {isPlaying && (
-          <div className="text-center text-sm text-gray-400 bg-gray-800/50 rounded-lg px-3 py-2">
+          <div className="text-center text-sm text-gray-400 bg-gray-800/50 rounded-lg px-3 py-2 md:hidden">
             Press ESC to {isPaused ? "resume" : "pause"}
           </div>
         )}

@@ -1,12 +1,16 @@
 "use server";
 
 import { prisma } from "@/utils/PrismaClient";
-import type { GameStats, GameSessionStats } from "@/types";
-import type { Achievement, ClientAchievement } from "@/types/achievements";
-import { ACHIEVEMENTS } from "@/types/achievements";
+import {
+  GameStats,
+  GameSessionStats,
+  AchievementUnlockResponse,
+} from "@/types/index";
+import { Achievement, ACHIEVEMENTS } from "@/types/achievements";
+import type { ClientAchievement } from "@/types/achievements";
 
 function toClientAchievement(achievement: Achievement): ClientAchievement {
-  const { condition, progress, ...clientAchievement } = achievement;
+  const { condition, ...clientAchievement } = achievement;
   return clientAchievement;
 }
 
@@ -56,6 +60,30 @@ export async function getUserStats(userId: string): Promise<GameStats> {
   }
 }
 
+export async function getUserAchievements(
+  userId: string
+): Promise<ClientAchievement[]> {
+  try {
+    const userAchievements = await prisma.userAchievement.findMany({
+      where: { userId },
+    });
+
+    return userAchievements.map((ua) => {
+      const achievement = ACHIEVEMENTS.find((a) => a.id === ua.achievementId);
+      if (!achievement) {
+        throw new Error(`Achievement ${ua.achievementId} not found`);
+      }
+      return {
+        ...toClientAchievement(achievement),
+        unlockedAt: ua.unlockedAt,
+      };
+    });
+  } catch (error) {
+    console.error("Error fetching user achievements:", error);
+    throw error;
+  }
+}
+
 async function updateStats(
   userId: string,
   currentGame: GameSessionStats
@@ -87,34 +115,10 @@ async function updateStats(
   }
 }
 
-export async function getUserAchievements(
-  userId: string
-): Promise<ClientAchievement[]> {
-  try {
-    const userAchievements = await prisma.userAchievement.findMany({
-      where: { userId },
-    });
-
-    return userAchievements.map((ua) => {
-      const achievement = ACHIEVEMENTS.find((a) => a.id === ua.achievementId);
-      if (!achievement) {
-        throw new Error(`Achievement ${ua.achievementId} not found`);
-      }
-      return {
-        ...toClientAchievement(achievement),
-        unlockedAt: ua.unlockedAt,
-      };
-    });
-  } catch (error) {
-    console.error("Error fetching user achievements:", error);
-    throw error;
-  }
-}
-
 async function checkAndUnlockAchievements(
   userId: string,
   currentGame: GameSessionStats
-) {
+): Promise<AchievementUnlockResponse> {
   try {
     const stats = await getUserStats(userId);
     const userAchievements = await prisma.userAchievement.findMany({
@@ -135,24 +139,9 @@ async function checkAndUnlockAchievements(
 
       let conditionMet = false;
       try {
-        switch (achievement.id) {
-          case "score-1000":
-          case "score-5000":
-          case "score-10000":
-          case "level-5":
-          case "level-10":
-          case "tetris":
-          case "perfect-clear":
-            conditionMet = achievement.condition(currentGameStats);
-            break;
-          case "first-game":
-          case "clear-10-lines":
-          case "clear-100-lines":
-            conditionMet = achievement.condition(stats);
-            break;
-          default:
-            conditionMet = achievement.condition(stats);
-        }
+        conditionMet = achievement.condition(
+          achievement.id.startsWith("game_") ? currentGameStats : stats
+        );
       } catch (error) {
         console.error(
           `Error checking condition for achievement ${achievement.id}:`,
@@ -162,7 +151,6 @@ async function checkAndUnlockAchievements(
       }
 
       if (conditionMet) {
-        console.log(`Unlocking achievement: ${achievement.id}`);
         await prisma.userAchievement.create({
           data: {
             userId,
@@ -203,7 +191,7 @@ async function checkAndUnlockAchievements(
 export async function trackGameEnd(
   userId: string,
   sessionStats: GameSessionStats
-) {
+): Promise<AchievementUnlockResponse> {
   try {
     await updateStats(userId, sessionStats);
     return await checkAndUnlockAchievements(userId, sessionStats);

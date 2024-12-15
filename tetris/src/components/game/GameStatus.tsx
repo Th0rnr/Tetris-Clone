@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { Trophy } from "lucide-react";
-import { startGameSession } from "@/app/helper/gameActions";
 import type { ClientAchievement } from "@/types/achievements";
 
 interface GameStatusProps {
@@ -12,6 +11,7 @@ interface GameStatusProps {
   onStart: () => void;
   newAchievements?: ClientAchievement[];
   isNewHighScore?: boolean;
+  isLoadingGameOver: boolean;
 }
 
 const GameStatus: React.FC<GameStatusProps> = ({
@@ -21,8 +21,10 @@ const GameStatus: React.FC<GameStatusProps> = ({
   onStart,
   newAchievements = [],
   isNewHighScore = false,
+  isLoadingGameOver,
 }) => {
   const [userId, setUserId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -37,11 +39,6 @@ const GameStatus: React.FC<GameStatusProps> = ({
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const contentType = response.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          throw new Error("Response is not JSON");
         }
 
         const data = await response.json();
@@ -62,19 +59,22 @@ const GameStatus: React.FC<GameStatusProps> = ({
       return;
     }
 
+    setIsLoading(true);
     try {
       onStart();
-      const result = await startGameSession(userId);
-
-      if (!result.success) {
-        console.error("Failed to start game session:", result.error);
-      }
     } catch (error) {
       console.error("Full error details:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   if (!isPlaying) {
+    const showGameOver =
+      !isLoadingGameOver && (score === 0 || newAchievements !== undefined);
+
+    if (!showGameOver) return null;
+
     return (
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center">
         <div className="bg-gray-900/90 p-8 rounded-xl max-w-sm w-full mx-4 text-center">
@@ -134,7 +134,8 @@ const GameStatus: React.FC<GameStatusProps> = ({
 
           <button
             onClick={handleStartGame}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-colors"
+            disabled={isLoading}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-colors disabled:opacity-50"
           >
             {score > 0 ? "Play Again" : "Start Game"}
           </button>

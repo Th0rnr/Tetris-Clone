@@ -18,6 +18,7 @@ const TetrisGame = () => {
     []
   );
   const [isNewHighScore, setIsNewHighScore] = useState(false);
+  const [isLoadingGameOver, setIsLoadingGameOver] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -82,6 +83,7 @@ const TetrisGame = () => {
         return;
       }
 
+      setIsLoadingGameOver(true);
       try {
         const result = await endGameSession(currentSessionId, {
           score: stats.score,
@@ -95,15 +97,14 @@ const TetrisGame = () => {
           throw new Error("Failed to end game session");
         }
 
-        if (result.newAchievements) {
-          setNewAchievements(result.newAchievements);
-        }
-
+        setNewAchievements(result.newAchievements || []);
         setIsNewHighScore(!!result.isNewHighScore);
         setCurrentSessionId(null);
       } catch (error) {
         console.error("Error ending game session:", error);
         setError("Failed to save game results");
+      } finally {
+        setIsLoadingGameOver(false);
       }
     },
     [currentSessionId]
@@ -155,6 +156,7 @@ const TetrisGame = () => {
           onStart={handleStartGame}
           newAchievements={newAchievements}
           isNewHighScore={isNewHighScore}
+          isLoadingGameOver={isLoadingGameOver}
         />
       </div>
 

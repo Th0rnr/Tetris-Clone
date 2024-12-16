@@ -70,27 +70,29 @@ const GameStatus: React.FC<GameStatusProps> = ({
   };
 
   if (!isPlaying) {
-    const showGameOver =
-      !isLoadingGameOver && (score === 0 || newAchievements !== undefined);
-
-    if (!showGameOver) return null;
-
     return (
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center">
         <div className="bg-gray-900/90 p-8 rounded-xl max-w-sm w-full mx-4 text-center">
           {score > 0 ? (
             <>
               <h2 className="text-3xl font-bold text-white mb-4">Game Over</h2>
-              <div className="mb-6">
-                <p className="text-gray-400 mb-2">
-                  {isNewHighScore ? "New High Score!" : "Final Score"}
-                </p>
-                <p className="text-4xl font-bold text-yellow-400">
-                  {score.toLocaleString()}
-                </p>
-              </div>
+              {isLoadingGameOver ? (
+                <div className="animate-pulse mb-6">
+                  <div className="h-8 bg-gray-700 rounded mb-2"></div>
+                  <div className="h-12 bg-gray-700 rounded"></div>
+                </div>
+              ) : (
+                <div className="mb-6">
+                  <p className="text-gray-400 mb-2">
+                    {isNewHighScore ? "New High Score!" : "Final Score"}
+                  </p>
+                  <p className="text-4xl font-bold text-yellow-400">
+                    {score.toLocaleString()}
+                  </p>
+                </div>
+              )}
 
-              {newAchievements.length > 0 && (
+              {!isLoadingGameOver && newAchievements.length > 0 && (
                 <div className="mb-6 border-t border-gray-700 pt-4">
                   <p className="text-gray-400 mb-3">Achievements Unlocked!</p>
                   <div className="space-y-3">

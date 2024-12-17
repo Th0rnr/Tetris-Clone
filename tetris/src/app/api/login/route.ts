@@ -3,7 +3,7 @@ import { login } from "@/app/controllers/loginController";
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json();
+    const { email, password, rememberMe } = await request.json();
 
     if (!email || !password) {
       return NextResponse.json(
@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const user = await login(email, password);
+    const user = await login(email, password, rememberMe);
     return NextResponse.json({ user });
   } catch (error) {
     console.error("Login error:", error);

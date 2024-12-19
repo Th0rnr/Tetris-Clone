@@ -1,26 +1,22 @@
 "use client";
 
 import React from "react";
-import type { ClientAchievement, GameStats } from "@/types/achievements";
-import { Play, Target, Zap, Gauge, Sparkles } from "lucide-react";
+import type { ClientAchievement, GameStats } from "@/types";
+import { Trophy, Layers, Gauge, Sparkles } from "lucide-react";
 
 interface AchievementsDisplayProps {
   achievements: ClientAchievement[];
   stats: GameStats;
 }
 
-const achievementIcons = {
-  Play,
-  Target,
-  Zap,
-  Gauge,
-  Sparkles,
+const categoryIcons = {
+  SCORE: Trophy,
+  LINES: Layers,
+  SPEED: Gauge,
+  SPECIAL: Sparkles,
 };
 
-const AchievementsDisplay = ({
-  achievements,
-  stats,
-}: AchievementsDisplayProps) => {
+const AchievementsDisplay = ({ achievements }: AchievementsDisplayProps) => {
   return (
     <div className="p-4 bg-gray-900">
       <h1 className="text-3xl font-bold text-white mb-8 text-center">
@@ -28,8 +24,7 @@ const AchievementsDisplay = ({
       </h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {achievements.map((achievement) => {
-          const Icon =
-            achievementIcons[achievement.icon as keyof typeof achievementIcons];
+          const Icon = categoryIcons[achievement.category];
           const isUnlocked = !!achievement.unlockedAt;
 
           if (achievement.secret && !isUnlocked) return null;

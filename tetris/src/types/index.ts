@@ -28,18 +28,6 @@ export interface TokenPayload {
   exp: number;
 }
 
-export interface GameStats {
-  userId: string;
-  totalScore: number;
-  highestScore: number;
-  totalLinesCleared: number;
-  maxLinesInOneGame: number;
-  gamesPlayed: number;
-  tetrisCount: number;
-  maxLevel: number;
-  perfectClearCount: number;
-}
-
 export interface GameSessionStats {
   score: number;
   linesCleared: number;
@@ -75,16 +63,4 @@ export interface ScoreProps {
   score: number;
   level: number;
   linesCleared: number;
-}
-
-export interface AchievementUnlockResponse {
-  newAchievements: ClientAchievement[];
-  totalReward: number;
-}
-
-export interface AchievementProgress {
-  achievement: ClientAchievement;
-  progress: number;
-  isUnlocked: boolean;
-  unlockedAt?: Date;
 }

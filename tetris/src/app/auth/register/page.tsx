@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+
 import { register } from "./actions";
 import Link from "next/link";
 import TetrisSpinner from "@/components/loader/TetrisSpinner";
@@ -9,7 +9,9 @@ import TetrisSpinner from "@/components/loader/TetrisSpinner";
 export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const [registrationEmail, setRegistrationEmail] = useState<string | null>(
+    null
+  );
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -21,7 +23,7 @@ export default function RegisterPage() {
       const result = await register(formData);
 
       if (result?.success) {
-        router.push("/private/game");
+        setRegistrationEmail(formData.get("email") as string);
         return;
       }
 
@@ -29,14 +31,39 @@ export default function RegisterPage() {
         setError(result.error);
       }
     } catch (error) {
-      if (error instanceof Error && error.message.includes("NEXT_REDIRECT")) {
-        router.push("/game");
-        return;
-      }
       setError("An unexpected error occurred");
     } finally {
       setIsLoading(false);
     }
+  }
+
+  if (registrationEmail) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
+        <div className="bg-gray-800 p-8 rounded-xl shadow-lg max-w-md w-full text-center">
+          <h2 className="text-2xl font-bold text-white mb-4">
+            Check Your Email
+          </h2>
+          <p className="text-gray-300 mb-6">
+            We've sent a verification link to{" "}
+            <span className="font-medium text-blue-400">
+              {registrationEmail}
+            </span>
+            . Please check your inbox and click the link to verify your email
+            address.
+          </p>
+          <div className="text-gray-400 text-sm">
+            <p className="mb-4">Don't see the email? Check your spam folder.</p>
+            <Link
+              href="/auth/login"
+              className="text-blue-400 hover:text-blue-300"
+            >
+              Return to login
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

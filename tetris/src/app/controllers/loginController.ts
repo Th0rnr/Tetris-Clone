@@ -34,6 +34,10 @@ export async function login(
       throw new Error("Login failed");
     }
 
+    if (!user.emailVerified) {
+      throw new Error("Please verify your email before logging in");
+    }
+
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
       throw new Error("Login failed");
@@ -105,6 +109,13 @@ export async function refreshAccessToken(
     const decoded = await validateRefreshToken(refreshToken);
     if (!decoded) return false;
 
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { emailVerified: true },
+    });
+
+    if (!user?.emailVerified) return false;
+
     const token = jwt.sign({ userId: decoded.userId }, ACCESS_TOKEN_SECRET, {
       expiresIn: ACCESS_TOKEN_LIFETIME,
     });
@@ -138,6 +149,7 @@ export async function getUserFromToken(token: string) {
         email: true,
         username: true,
         profilePicture: true,
+        emailVerified: true,
         createdAt: true,
         updatedAt: true,
       },

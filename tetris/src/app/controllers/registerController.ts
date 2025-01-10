@@ -6,7 +6,7 @@ const SALT_ROUNDS = 10;
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ??
   (process.env.NODE_ENV === "production"
-    ? "https://tetris-clone.netlify.app/"
+    ? "https://tetris-clone.netlify.app"
     : "http://localhost:3000");
 
 interface RegistrationData {

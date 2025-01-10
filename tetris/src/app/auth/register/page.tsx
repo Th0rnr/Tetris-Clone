@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-
 import { register } from "./actions";
 import Link from "next/link";
 import TetrisSpinner from "@/components/loader/TetrisSpinner";

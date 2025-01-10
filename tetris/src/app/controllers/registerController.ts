@@ -1,13 +1,12 @@
 import { prisma } from "@/utils/PrismaClient";
-import { supabase } from "@/utils/Client";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import { cookies } from "next/headers";
 
+const ACCESS_TOKEN_SECRET =
+  process.env.ACCESS_TOKEN_SECRET ?? "your_secret_key";
+const ACCESS_TOKEN_LIFETIME = process.env.ACCESS_TOKEN_LIFETIME ?? "1h";
 const SALT_ROUNDS = 10;
-const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  (process.env.NODE_ENV === "production"
-    ? "https://tetris-clone.netlify.app"
-    : "http://localhost:3000");
 
 interface RegistrationData {
   email: string;
@@ -58,6 +57,7 @@ export async function register({
   profilePicture = null,
 }: RegistrationData) {
   try {
+    // Validate password
     const passwordValidation = validatePassword(password);
     if (!passwordValidation.isValid) {
       throw new Error(
@@ -65,6 +65,7 @@ export async function register({
       );
     }
 
+    // Check if user already exists
     const existingUser = await prisma.user.findFirst({
       where: {
         OR: [{ email }, { username }],
@@ -80,15 +81,16 @@ export async function register({
       }
     }
 
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
+    // Create user
     const user = await prisma.user.create({
       data: {
         email,
         username,
         password: hashedPassword,
         profilePicture,
-        emailVerified: false,
       },
       select: {
         id: true,
@@ -100,30 +102,33 @@ export async function register({
       },
     });
 
-    const { error: emailError } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${SITE_URL}/api/verify?userId=${user.id}`,
-      },
-    });
+    // Create JWT token
+    const token = jwt.sign(
+      { userId: user.id.toString() },
+      ACCESS_TOKEN_SECRET,
+      { expiresIn: ACCESS_TOKEN_LIFETIME }
+    );
 
-    if (emailError) {
-      await prisma.user.delete({
-        where: { id: user.id },
-      });
-      throw new Error("Failed to send verification email");
-    }
+    // Set cookie
+    const cookieStore = await cookies();
+    cookieStore.set("access_token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 3600, // 1 hour in seconds
+    });
 
     return {
       success: true,
       user,
-      message:
-        "Registration successful. Please check your email to verify your account.",
+      message: "Registration successful",
     };
   } catch (error) {
+    // Handle known error types
     if (error instanceof Error) {
       throw error;
     }
+    // Handle unknown errors
     throw new Error("Registration failed");
   }
 }
